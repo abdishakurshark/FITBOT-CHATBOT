@@ -1,391 +1,357 @@
-def calculate_bmi(weight_kg, height_m):
-    """
-    Calculate BMI using weight in kg and height in meters.
-    Formula: BMI = weight (kg) / (height (m) ^ 2)
-    """
-    if height_m <= 0 or weight_kg <= 0:
-        raise ValueError("Height and weight must be positive values")
-    return weight_kg / (height_m ** 2)
-
-def classify_bmi(bmi):
-    """
-    Classify BMI into categories based on WHO standards.
-    Returns category and health risk information.
-    """
-    if bmi < 18.5:
-        return "Underweight", "Possible nutritional deficiency and osteoporosis"
-    elif 18.5 <= bmi < 25:
-        return "Normal", "Low risk (healthy range)"
-    elif 25 <= bmi < 30:
-        return "Overweight", "Moderate risk of developing heart disease, high blood pressure, stroke, diabetes"
-    else:
-        return "Obese", "High risk of developing heart disease, high blood pressure, stroke, diabetes"
-
-%%writefile recommender.py
-# Sample workout routines for different BMI categories and goals
-WORKOUT_PLANS = {
-    "Underweight": {
-        "default": {
-            "description": "Muscle building and strength training",
-            "routine": [
-                "Strength training 3-4 times/week (focus on compound movements)",
-                "Moderate cardio 2-3 times/week (20-30 minutes)",
-                "Include rest days for muscle recovery"
-            ],
-            "rationale": "Focuses on building muscle mass while maintaining cardiovascular health"
-        },
-        "Gain Muscle": {
-            "description": "Intensive muscle building program",
-            "routine": [
-                "Strength training 4-5 times/week (heavy weights, low reps)",
-                "Limited cardio (1-2 times/week for 15-20 minutes)",
-                "Focus on progressive overload"
-            ],
-            "rationale": "Maximizes muscle growth by prioritizing strength training and minimizing calorie burn from cardio"
-        }
-    },
-    "Normal": {
-        "default": {
-            "description": "Balanced fitness maintenance",
-            "routine": [
-                "Strength training 3 times/week (full body workouts)",
-                "Cardio 2-3 times/week (30-45 minutes)",
-                "Flexibility exercises (yoga or stretching) 2 times/week"
-            ],
-            "rationale": "Maintains overall fitness with balanced strength, cardio, and flexibility"
-        },
-        "Lose Weight": {
-            "description": "Fat loss and toning",
-            "routine": [
-                "HIIT workouts 3 times/week",
-                "Strength training 2 times/week (circuit training)",
-                "Moderate cardio 2 times/week (30-45 minutes)"
-            ],
-            "rationale": "Increases calorie burn while preserving muscle mass"
-        },
-        "Gain Muscle": {
-            "description": "Lean muscle building",
-            "routine": [
-                "Strength training 4 times/week (split routine)",
-                "Moderate cardio 1-2 times/week (20-30 minutes)",
-                "Focus on progressive overload"
-            ],
-            "rationale": "Builds muscle while maintaining cardiovascular health"
-        }
-    },
-    "Overweight": {
-        "default": {
-            "description": "Fat burning and cardiovascular health",
-            "routine": [
-                "Cardio 4-5 times/week (30-45 minutes)",
-                "Strength training 2-3 times/week (full body, moderate weights)",
-                "Low-impact activities (walking, swimming) on rest days"
-            ],
-            "rationale": "Focuses on burning calories while maintaining muscle mass"
-        },
-        "Lose Weight": {
-            "description": "Intensive fat loss program",
-            "routine": [
-                "HIIT workouts 3 times/week",
-                "Steady-state cardio 3 times/week (45-60 minutes)",
-                "Strength training 2 times/week (circuit training)"
-            ],
-            "rationale": "Maximizes calorie burn while preserving muscle mass"
-        }
-    },
-    "Obese": {
-        "default": {
-            "description": "Low-impact fat burning and mobility",
-            "routine": [
-                "Low-impact cardio 5 times/week (walking, swimming, cycling - 30-45 minutes)",
-                "Strength training 2 times/week (light weights, higher reps)",
-                "Stretching daily to improve mobility"
-            ],
-            "rationale": "Focuses on sustainable calorie burn while minimizing joint stress"
-        },
-        "Lose Weight": {
-            "description": "Sustainable weight loss program",
-            "routine": [
-                "Daily low-impact cardio (30-60 minutes)",
-                "Strength training 2 times/week (bodyweight or light weights)",
-                "Gradual progression in intensity"
-            ],
-            "rationale": "Provides consistent calorie burn while being safe for joints"
-        }
-    }
-}
-
-# Sample meal plans for different BMI categories and goals
-MEAL_PLANS = {
-    "Underweight": {
-        "default": {
-            "description": "High-calorie, nutrient-dense meals",
-            "meals": [
-                "Breakfast: Whole grain toast with avocado and eggs + smoothie with banana, peanut butter, and milk",
-                "Snack: Greek yogurt with granola and honey",
-                "Lunch: Grilled chicken with quinoa and roasted vegetables",
-                "Snack: Handful of nuts and dried fruits",
-                "Dinner: Salmon with sweet potato and steamed greens",
-                "Before bed: Cottage cheese with berries"
-            ],
-            "rationale": "Provides calorie surplus with balanced macronutrients for healthy weight gain"
-        },
-        "Gain Muscle": {
-            "description": "High-protein, calorie-dense meals",
-            "meals": [
-                "Breakfast: Oatmeal with protein powder, nuts, and banana",
-                "Snack: Hard-boiled eggs and whole grain crackers",
-                "Lunch: Lean beef with brown rice and mixed vegetables",
-                "Snack: Protein shake with milk and peanut butter",
-                "Dinner: Grilled chicken with pasta and pesto sauce",
-                "Before bed: Casein protein pudding"
-            ],
-            "rationale": "Maximizes protein intake for muscle synthesis with adequate calories"
-        }
-    },
-    "Normal": {
-        "default": {
-            "description": "Balanced, nutritious meals",
-            "meals": [
-                "Breakfast: Greek yogurt with berries and granola",
-                "Snack: Apple with almond butter",
-                "Lunch: Grilled chicken salad with mixed greens and olive oil dressing",
-                "Snack: Hummus with vegetable sticks",
-                "Dinner: Baked fish with quinoa and steamed vegetables",
-                "Dessert: Dark chocolate (small portion)"
-            ],
-            "rationale": "Maintains health with balanced macronutrients and micronutrients"
-        },
-        "Lose Weight": {
-            "description": "Low-calorie, high-protein meals",
-            "meals": [
-                "Breakfast: Scrambled eggs with spinach and whole grain toast",
-                "Snack: Protein shake with almond milk",
-                "Lunch: Turkey wrap with whole wheat tortilla and vegetables",
-                "Snack: Cottage cheese with cucumber slices",
-                "Dinner: Grilled shrimp with zucchini noodles and pesto",
-                "Dessert: Sugar-free gelatin"
-            ],
-            "rationale": "Creates calorie deficit while maintaining protein intake to preserve muscle"
-        },
-        "Gain Muscle": {
-            "description": "High-protein, moderate-carb meals",
-            "meals": [
-                "Breakfast: Protein pancakes with sugar-free syrup",
-                "Snack: Tuna salad with whole grain crackers",
-                "Lunch: Grilled chicken with brown rice and broccoli",
-                "Snack: Protein bar and banana",
-                "Dinner: Lean steak with roasted potatoes and asparagus",
-                "Before bed: Casein protein shake"
-            ],
-            "rationale": "Supports muscle growth with adequate protein and energy from carbs"
-        }
-    },
-    "Overweight": {
-        "default": {
-            "description": "Low-carb, high-protein meals",
-            "meals": [
-                "Breakfast: Vegetable omelette with avocado",
-                "Snack: Handful of almonds",
-                "Lunch: Grilled chicken Caesar salad (light dressing)",
-                "Snack: Greek yogurt with chia seeds",
-                "Dinner: Baked salmon with roasted vegetables",
-                "Dessert: Berries with whipped cream"
-            ],
-            "rationale": "Reduces calorie intake while maintaining satiety and protein intake"
-        },
-        "Lose Weight": {
-            "description": "Calorie-controlled, nutrient-dense meals",
-            "meals": [
-                "Breakfast: Protein smoothie with spinach and almond milk",
-                "Snack: Hard-boiled egg and celery sticks",
-                "Lunch: Turkey burger (no bun) with side salad",
-                "Snack: Protein shake with water",
-                "Dinner: Baked cod with roasted Brussels sprouts",
-                "Dessert: Sugar-free popsicle"
-            ],
-            "rationale": "Creates significant calorie deficit while maintaining protein to preserve muscle"
-        }
-    },
-    "Obese": {
-        "default": {
-            "description": "Portion-controlled, balanced meals",
-            "meals": [
-                "Breakfast: Scrambled eggs with sautéed vegetables",
-                "Snack: Small apple with teaspoon of peanut butter",
-                "Lunch: Grilled chicken with steamed vegetables",
-                "Snack: Protein shake with water",
-                "Dinner: Baked fish with mashed cauliflower",
-                "Dessert: Herbal tea"
-            ],
-            "rationale": "Focuses on portion control while providing balanced nutrition"
-        },
-        "Lose Weight": {
-            "description": "Strict calorie control with high protein",
-            "meals": [
-                "Breakfast: Egg white omelette with vegetables",
-                "Snack: Protein shake with water",
-                "Lunch: Grilled chicken breast with steamed broccoli",
-                "Snack: Cucumber slices with hummus",
-                "Dinner: Baked white fish with asparagus",
-                "Dessert: Herbal tea"
-            ],
-            "rationale": "Maximizes weight loss while maintaining essential nutrients"
-        }
-    }
-}
-
-def get_workout_recommendation(bmi_category, goal=None):
-    """Get workout recommendation based on BMI category and optional goal"""
-    category_plans = WORKOUT_PLANS.get(bmi_category, {})
-
-    if goal and goal in category_plans:
-        return category_plans[goal]
-    elif "default" in category_plans:
-        return category_plans["default"]
-    else:
-        return {
-            "description": "General fitness routine",
-            "routine": ["Cardio 3 times/week", "Strength training 2 times/week"],
-            "rationale": "Balanced routine for overall health"
-        }
-
-def get_meal_recommendation(bmi_category, goal=None):
-    """Get meal recommendation based on BMI category and optional goal"""
-    category_plans = MEAL_PLANS.get(bmi_category, {})
-
-    if goal and goal in category_plans:
-        return category_plans[goal]
-    elif "default" in category_plans:
-        return category_plans["default"]
-    else:
-        return {
-            "description": "Balanced nutrition plan",
-            "meals": [
-                "Breakfast: Whole grain cereal with milk",
-                "Lunch: Grilled chicken with vegetables",
-                "Dinner: Fish with quinoa",
-                "Snacks: Fruits and nuts"
-            ],
-            "rationale": "Provides balanced nutrition for general health"
-        }
-
-%%writefile app.py
 import streamlit as st
-from bmi import calculate_bmi, classify_bmi
-from workout import get_workout_recommendation, get_meal_recommendation
+import random
 
-# Configure Streamlit page
-st.set_page_config(
-    page_title="FitBot - Your AI Fitness Assistant",
-    page_icon="💪",
-    layout="centered"
-)
+# YouTube video database
+YT_VIDEOS = {
+    "weight_loss": {
+        "title": "The Science of Weight Loss Explained",
+        "url": "https://www.youtube.com/watch?v=wpBSlBcxN4E",
+        "channel": "Jeff Nippard"
+    },
+    "muscle_gain": {
+        "title": "Complete Muscle Growth Guide",
+        "url": "https://www.youtube.com/watch?v=XL8WHAi6l7U",
+        "channel": "Renaissance Periodization"
+    },
+    "beginner_workout": {
+        "title": "Beginner Full Body Routine",
+        "url": "https://www.youtube.com/watch?v=vC8LbvYk6es",
+        "channel": "Athlean-X"
+    },
+    "nutrition_basics": {
+        "title": "Nutrition Made Simple",
+        "url": "https://www.youtube.com/watch?v=1T7K2e8VX5I",
+        "channel": "Jeremy Ethier"
+    },
+    "gym_etiquette": {
+        "title": "Gym Do's and Don'ts",
+        "url": "https://www.youtube.com/watch?v=JkOXgX5qQh8",
+        "channel": "Buff Dudes"
+    },
+    "proper_form": {
+        "title": "Perfect Exercise Form Guide",
+        "url": "https://www.youtube.com/watch?v=2SO5I0KqyiE",
+        "channel": "Scott Herman Fitness"
+    },
+    "home_workout": {
+        "title": "No Equipment Home Workout",
+        "url": "https://www.youtube.com/watch?v=ml6cT4AZdqI",
+        "channel": "Fitness Blender"
+    },
+    "hiit": {
+        "title": "20 Minute Fat Burning HIIT",
+        "url": "https://www.youtube.com/watch?v=6W7C3VZQ9y8",
+        "channel": "Heather Robertson"
+    }
+}
 
-# Custom CSS for better styling
-st.markdown("""
-    <style>
-        .big-font {
-            font-size:20px !important;
-            font-weight: bold;
-        }
-        .highlight {
-            background-color: #f5f5f5;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-        .recommendation-box {
-            border-left: 4px solid #4CAF50;
-            padding: 10px;
-            margin: 10px 0;
-            background-color: #f9f9f9;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# Enhanced knowledge base
+KNOWLEDGE_BASE = {
+    "workout": {
+        "beginner": [
+            "Full-body routine 3x/week: Squats, push-ups, rows, planks (3 sets of 8-12 reps)",
+            "Start with bodyweight exercises before adding weights",
+            "Allow at least 1 rest day between sessions for recovery"
+        ],
+        "intermediate": [
+            "Split routine (upper/lower or push/pull/legs) 4-5x/week",
+            "Incorporate progressive overload - increase weight gradually",
+            "Try supersets to save time and increase intensity"
+        ],
+        "advanced": [
+            "Specialized splits (e.g., arms day, back day) 5-6x/week",
+            "Incorporate advanced techniques like drop sets and pyramids",
+            "Periodize your training with different intensity phases"
+        ],
+        "weight_loss": [
+            "Circuit training: Alternate between strength and cardio stations",
+            "Metabolic conditioning 2-3x/week (e.g., EMOM, AMRAP)",
+            "Keep rest periods short (30-60 seconds between sets)"
+        ],
+        "muscle_gain": [
+            "Focus on compound lifts: Squat, bench, deadlift, overhead press",
+            "Train each muscle group 2-3x/week with varying volume",
+            "Use 70-85% of your 1RM for optimal hypertrophy"
+        ]
+    },
+    "nutrition": {
+        "weight_loss": [
+            "Protein: 1.6-2.2g/kg | Carbs: 2-3g/kg | Fat: 0.5-1g/kg",
+            "Fill half your plate with vegetables at each meal",
+            "Sample meal: Grilled chicken (150g), quinoa (1/2 cup), mixed veggies (2 cups)"
+        ],
+        "muscle_gain": [
+            "Protein: 2.2-2.5g/kg | Carbs: 4-6g/kg | Fat: 0.5-1g/kg",
+            "Pre-workout: Carbs + protein | Post-workout: Protein + fast carbs",
+            "Sample meal: Salmon (200g), sweet potato (1 medium), broccoli (1 cup)"
+        ],
+        "general": [
+            "Hydration: 35ml/kg body weight (more if sweating)",
+            "Micronutrients: Focus on iron, calcium, vitamin D",
+            "Meal timing: Eat every 3-4 hours for stable energy"
+        ]
+    },
+    "gym": {
+        "equipment": [
+            "Treadmill: Start walking, gradually increase incline/speed",
+            "Cable machines: Great for controlled movements",
+            "Free weights: Better for functional strength than machines"
+        ],
+        "etiquette": [
+            "Re-rack weights and wipe down equipment",
+            "Don't hog multiple stations during peak hours",
+            "Ask before working in with someone"
+        ],
+        "safety": [
+            "Use spotters for heavy lifts",
+            "Learn proper form before adding weight",
+            "Listen to your body - pain means stop"
+        ]
+    }
+}
 
-# App header
-st.title("💪 FitBot - Your AI Fitness Assistant")
-st.markdown("""
-    Welcome to FitBot! I'll help you with personalized fitness recommendations based on your BMI.
-    Let's get started by calculating your BMI.
-""")
+# Add a title
+st.title("FITBOT 💪 - Your Ultimate Fitness Assistant")
 
-# User input section
-with st.form("user_input"):
-    st.subheader("Your Body Metrics")
+# User information
+with st.expander("📝 Enter Your Details"):
     col1, col2 = st.columns(2)
-
     with col1:
-        weight = st.number_input("Weight (kg)", min_value=30.0, max_value=200.0, value=70.0, step=0.1)
-
+        weight = st.number_input("Enter your weight (kg):", min_value=30.0, max_value=200.0, value=70.0)
+        height = st.number_input("Enter your height (cm):", min_value=100.0, max_value=250.0, value=170.0)
+        age = st.number_input("Enter your age:", min_value=12, max_value=100, value=25)
     with col2:
-        height = st.number_input("Height (m)", min_value=1.2, max_value=2.5, value=1.75, step=0.01)
+        gender = st.selectbox("Gender:", ["Male", "Female", "Other"])
+        goal = st.selectbox("What's your primary goal?", ["Weight loss", "Muscle gain", "Maintenance", "Endurance", "Body recomposition"])
+        fitness_level = st.selectbox("Your fitness level:", ["Beginner", "Intermediate", "Advanced"])
+    workout_days = st.slider("Days you can workout per week:", 1, 7, 3)
 
-    goal = st.radio("Select your primary goal (optional):",
-                   ["Just analyze my BMI", "Lose Weight", "Gain Muscle"],
-                   index=0)
+# BMI Calculation
+if st.button("Get My Personalized Fitness Plan"):
+    bmi = weight / ((height / 100) ** 2)
+    st.subheader(f"Your BMI: {bmi:.2f}")
+    
+    # Enhanced BMI Analysis
+    if bmi < 18.5:
+        st.warning("You're underweight. Focus on muscle building with calorie surplus.")
+    elif 18.5 <= bmi < 24.9:
+        st.success("You're at a healthy weight. Let's optimize your physique!")
+    else:
+        st.warning("You're overweight. Focus on fat loss with calorie deficit.")
+    
+    st.markdown("---")
+    
+    # Enhanced Workout Recommendations
+    st.subheader("🏋️‍♂️ Personalized Workout Plan")
+    st.write(f"**Recommended {workout_days}-day routine for {fitness_level.lower()} {goal.lower()}:**")
+    
+    # Generate workout days
+    for day in range(1, workout_days + 1):
+        with st.expander(f"Day {day}"):
+            if goal == "Weight loss":
+                st.write("- Warmup: 10 min dynamic stretching")
+                st.write("- Circuit: 4 rounds (45s work/15s rest)")
+                st.write("  • Kettlebell swings\n  • Burpees\n  • Jump squats\n  • Mountain climbers")
+                st.write("- Finish: 20 min steady-state cardio")
+                st.video(YT_VIDEOS["hiit"]["url"])
+                st.caption(f"Need HIIT ideas? Watch: {YT_VIDEOS['hiit']['title']}")
+            elif goal == "Muscle gain":
+                st.write(f"- {random.choice(['Upper', 'Lower', 'Push', 'Pull'])} Focus Day")
+                st.write("- Main lift: 5x5 heavy compound")
+                st.write("- Accessories: 3x8-12")
+                st.write("- Example exercises:")
+                st.write("  • Bench press\n  • Rows\n  • Shoulder press\n  • Triceps dips")
+                st.video(YT_VIDEOS["proper_form"]["url"])
+                st.caption(f"Form tips: {YT_VIDEOS['proper_form']['title']}")
+            else:  # Maintenance
+                st.write("- Full body workout")
+                st.write("- 3-4 sets per exercise")
+                st.write("- Example exercises:")
+                st.write("  • Squats\n  • Push-ups\n  • Rows\n  • Plank variations")
+                st.video(YT_VIDEOS["beginner_workout"]["url"])
+                st.caption(f"Demo: {YT_VIDEOS['beginner_workout']['title']}")
+    
+    # Enhanced Dietary Plan
+    st.subheader("🍏 Custom Nutrition Plan")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Macronutrients:**")
+        if goal == "Weight loss":
+            st.write(KNOWLEDGE_BASE["nutrition"]["weight_loss"][0])
+        elif goal == "Muscle gain":
+            st.write(KNOWLEDGE_BASE["nutrition"]["muscle_gain"][0])
+        else:
+            st.write("Protein: 1.2-1.6g/kg | Carbs: 3-4g/kg | Fat: 0.8-1.2g/kg")
+        
+        st.write("**Meal Timing:**")
+        st.write("- Pre-workout: Carbs + protein")
+        st.write("- Post-workout: Protein + carbs")
+        st.write("- Space meals 3-4 hours apart")
+    
+    with col2:
+        st.write("**Sample Meal Plan:**")
+        st.write("- Breakfast: Oatmeal + eggs + berries")
+        st.write("- Lunch: Grilled chicken + rice + veggies")
+        st.write("- Dinner: Fish + quinoa + salad")
+        st.write("- Snacks: Greek yogurt, nuts, protein shake")
+    
+    st.video(YT_VIDEOS["nutrition_basics"]["url"])
+    st.caption(f"Nutrition guide: {YT_VIDEOS['nutrition_basics']['title']}")
 
-    submitted = st.form_submit_button("Calculate BMI & Get Recommendations")
+    # Enhanced Gym Tips Section
+    st.subheader("🏢 Expert Gym Guidance")
+    tab1, tab2, tab3 = st.tabs(["Equipment", "Etiquette", "Safety"])
+    with tab1:
+        for tip in KNOWLEDGE_BASE["gym"]["equipment"]:
+            st.write(f"- {tip}")
+        st.video(YT_VIDEOS["gym_etiquette"]["url"])
+        st.caption(f"Gym tips: {YT_VIDEOS['gym_etiquette']['title']}")
+    with tab2:
+        for tip in KNOWLEDGE_BASE["gym"]["etiquette"]:
+            st.write(f"- {tip}")
+    with tab3:
+        for tip in KNOWLEDGE_BASE["gym"]["safety"]:
+            st.write(f"- {tip}")
 
-# Process and display results
-if submitted:
-    # Calculate BMI
-    try:
-        bmi = calculate_bmi(weight, height)
-        category, risk = classify_bmi(bmi)
+# Enhanced Chatbot feature
+st.markdown("---")
+st.subheader("🤖 Ask FitBot Anything")
 
-        # Display BMI results
-        st.subheader("Your BMI Results")
-        st.markdown(f"""
-            <div class="highlight">
-                <p class="big-font">BMI: {bmi:.1f}</p>
-                <p><strong>Category:</strong> {category}</p>
-                <p><strong>Health Risk:</strong> {risk}</p>
-            </div>
-        """, unsafe_allow_html=True)
+chat_history = []
+user_question = st.text_input("Type your fitness question here:")
 
-        # Determine goal for recommendations
-        user_goal = None if goal == "Just analyze my BMI" else goal.split()[0]
+if user_question:
+    user_question = user_question.lower()
+    response = ""
+    video_rec = None
+    
+    # Enhanced question detection with video recommendations
+    if any(word in user_question for word in ["video", "youtube", "watch", "explain", "demonstrate"]):
+        if "weight loss" in user_question or "fat loss" in user_question:
+            response = "Here's an excellent video explaining weight loss science:"
+            video_rec = YT_VIDEOS["weight_loss"]
+        elif "muscle gain" in user_question or "bulking" in user_question:
+            response = "This video covers muscle building perfectly:"
+            video_rec = YT_VIDEOS["muscle_gain"]
+        elif "beginner" in user_question and "workout" in user_question:
+            response = "Perfect beginner workout tutorial:"
+            video_rec = YT_VIDEOS["beginner_workout"]
+        elif "nutrition" in user_question or "diet" in user_question:
+            response = "Nutrition basics explained clearly:"
+            video_rec = YT_VIDEOS["nutrition_basics"]
+        elif "etiquette" in user_question or "gym rules" in user_question:
+            response = "Gym etiquette guide:"
+            video_rec = YT_VIDEOS["gym_etiquette"]
+        elif "form" in user_question or "technique" in user_question:
+            response = "Proper exercise form demonstration:"
+            video_rec = YT_VIDEOS["proper_form"]
+        elif "home workout" in user_question or "no equipment" in user_question:
+            response = "Effective home workout routine:"
+            video_rec = YT_VIDEOS["home_workout"]
+        elif "hiit" in user_question or "interval" in user_question:
+            response = "Great HIIT workout session:"
+            video_rec = YT_VIDEOS["hiit"]
+        else:
+            response = "I recommend these fitness channels:\n- Jeff Nippard (science-based)\n- Athlean-X (injury prevention)\n- Renaissance Periodization (nutrition)"
+    
+    # Workout questions
+    elif any(word in user_question for word in ["routine", "program", "train", "exercise", "workout"]):
+        if "beginner" in user_question:
+            response = random.choice(KNOWLEDGE_BASE["workout"]["beginner"])
+        elif "intermediate" in user_question:
+            response = random.choice(KNOWLEDGE_BASE["workout"]["intermediate"])
+        elif "advanced" in user_question:
+            response = random.choice(KNOWLEDGE_BASE["workout"]["advanced"])
+        else:
+            response = f"FitBot: For {goal.lower()}, I recommend {random.choice(KNOWLEDGE_BASE['workout'][goal.lower().replace(' ', '_')])}"
+    
+    # Diet questions
+    elif any(word in user_question for word in ["diet", "food", "eat", "nutrition", "meal"]):
+        if "weight loss" in user_question:
+            response = "Weight loss nutrition: " + " | ".join(KNOWLEDGE_BASE["nutrition"]["weight_loss"])
+        elif "muscle" in user_question:
+            response = "Muscle gain nutrition: " + " | ".join(KNOWLEDGE_BASE["nutrition"]["muscle_gain"])
+        else:
+            response = "General nutrition: " + random.choice(KNOWLEDGE_BASE["nutrition"]["general"])
+    
+    # Gym questions
+    elif any(word in user_question for word in ["gym", "equipment", "etiquette", "machine", "safety"]):
+        if "equip" in user_question:
+            response = "Equipment tips:\n- " + "\n- ".join(KNOWLEDGE_BASE["gym"]["equipment"])
+        elif "etiquette" in user_question:
+            response = "Gym etiquette:\n- " + "\n- ".join(KNOWLEDGE_BASE["gym"]["etiquette"])
+        elif "safe" in user_question:
+            response = "Safety tips:\n- " + "\n- ".join(KNOWLEDGE_BASE["gym"]["safety"])
+        else:
+            response = "Gym advice: " + random.choice(KNOWLEDGE_BASE["gym"]["equipment"] + KNOWLEDGE_BASE["gym"]["etiquette"] + KNOWLEDGE_BASE["gym"]["safety"])
+    
+    # Supplement questions
+    elif any(word in user_question for word in ["supplement", "protein", "creatine"]):
+        response = """
+        Supplement guide:
+        - Protein powder: 20-40g post-workout
+        - Creatine: 5g daily for strength
+        - Multivitamin: For micronutrient support
+        - Caffeine: Pre-workout for energy
+        """
+    
+    # Recovery questions
+    elif any(word in user_question for word in ["recover", "rest", "sleep"]):
+        response = """
+        Recovery tips:
+        - Aim for 7-9 hours sleep
+        - Active recovery days (walking, yoga)
+        - Foam roll sore muscles
+        - Stay hydrated (2-3L water/day)
+        """
+    
+    else:
+        response = """
+        FitBot: I can help with:
+        - Workout plans and exercises
+        - Nutrition and meal planning
+        - Gym equipment and etiquette
+        - Supplement guidance
+        - Recovery strategies
+        Try asking more specifically!
+        """
+    
+    # Display response
+    chat_history.append(f"You: {user_question}")
+    chat_history.append(f"FitBot: {response}")
+    
+    if video_rec:
+        st.video(video_rec["url"])
+        st.caption(f"🎥 {video_rec['title']} by {video_rec['channel']}")
+    
+    for message in chat_history[-6:]:  # Show last 3 exchanges
+        st.write(message)
 
-        # Get and display workout recommendations
-        st.subheader("🏋️‍♂️ Workout Recommendations")
-        workout = get_workout_recommendation(category, user_goal)
+# Additional features
+st.markdown("---")
+st.subheader("📚 Fitness Resources")
 
-        st.markdown(f"""
-            <div class="recommendation-box">
-                <p><strong>{workout['description']}</strong></p>
-                <ul>
-                    {''.join([f'<li>{item}</li>' for item in workout['routine']])}
-                </ul>
-                <p><em>Why this works for you:</em> {workout['rationale']}</p>
-            </div>
-        """, unsafe_allow_html=True)
+with st.expander("🎬 Recommended YouTube Channels"):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.write("**Science-Based:**")
+        st.write("- [Jeff Nippard](https://www.youtube.com/@JeffNippard)")
+        st.write("- [Jeremy Ethier](https://www.youtube.com/@JeremyEthier)")
+    with col2:
+        st.write("**Workouts:**")
+        st.write("- [Athlean-X](https://www.youtube.com/@AthleanX)")
+        st.write("- [Scott Herman](https://www.youtube.com/@ScottHermanFitness)")
+    with col3:
+        st.write("**Nutrition:**")
+        st.write("- [Renaissance Periodization](https://www.youtube.com/@RenaissancePeriodization)")
+        st.write("- [Greg Doucette](https://www.youtube.com/@GregDoucette)")
 
-        # Get and display meal recommendations
-        st.subheader("🍽️ Meal Plan Recommendations")
-        meals = get_meal_recommendation(category, user_goal)
+with st.expander("📱 Fitness Apps"):
+    st.write("- MyFitnessPal (nutrition tracking)")
+    st.write("- Strong (workout tracking)")
+    st.write("- Nike Training Club (guided workouts)")
 
-        st.markdown(f"""
-            <div class="recommendation-box">
-                <p><strong>{meals['description']}</strong></p>
-                <ul>
-                    {''.join([f'<li>{item}</li>' for item in meals['meals']])}
-                </ul>
-                <p><em>Why this works for you:</em> {meals['rationale']}</p>
-            </div>
-        """, unsafe_allow_html=True)
-
-    except ValueError as e:
-        st.error(f"Error: {str(e)} Please enter valid height and weight values.")
-
-# Run the app using ngrok
-from pyngrok import ngrok
-import streamlit as st
-
-# Setup ngrok tunnel
-public_url = ngrok.connect(port='8501')
-st.write(f"Public URL: {public_url}")
-
-# Run Streamlit
-!streamlit run app.py
+with st.expander("📖 Recommended Books"):
+    st.write("- 'Bigger Leaner Stronger' by Michael Matthews")
+    st.write("- 'The Renaissance Diet' by Dr. Mike Israetel")
+    st.write("- 'Becoming a Supple Leopard' by Kelly Starrett")
